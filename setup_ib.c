@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <malloc.h>
 
-#include "sock.h"
+#include "mpi.h"
 #include "ib.h"
 #include "debug.h"
 #include "config.h"
@@ -10,101 +10,23 @@
 
 struct IBRes ib_res;
 
-int connect_qp_server ()
-{
-    int			ret	      = 0, n = 0;
-    int			sockfd	      = 0;
-    int			peer_sockfd   = 0;
-    struct sockaddr_in	peer_addr;
-    socklen_t		peer_addr_len = sizeof(struct sockaddr_in);
-    char sock_buf[64]		      = {'\0'};
-    struct QPInfo	local_qp_info, remote_qp_info;
-
-    sockfd = sock_create_bind(config_info.sock_port);
-    check(sockfd > 0, "Failed to create server socket.");
-    listen(sockfd, 5);
-
-    peer_sockfd = accept(sockfd, (struct sockaddr *)&peer_addr,
-			 &peer_addr_len);
-    check (peer_sockfd > 0, "Failed to create peer_sockfd");
-
-    /* init local qp_info */
-    local_qp_info.lid	 = ib_res.port_attr.lid; 
-    local_qp_info.qp_num = ib_res.qp->qp_num;
-    local_qp_info.rkey   = ib_res.mr->rkey;
-    local_qp_info.raddr  = (uintptr_t) ib_res.ib_buf;
-
-    /* get qp_info from client */
-    ret = sock_get_qp_info (peer_sockfd, &remote_qp_info);
-    check (ret == 0, "Failed to get qp_info from client");
-    
-    /* send qp_info to client */    
-    ret = sock_set_qp_info (peer_sockfd, &local_qp_info);
-    check (ret == 0, "Failed to send qp_info to client");
-
-    /* store rkey and raddr info */
-    ib_res.rkey  = remote_qp_info.rkey;
-    ib_res.raddr = remote_qp_info.raddr;
-
-    /* change send QP state to RTS */    	
-    ret = modify_qp_to_rts (ib_res.qp, remote_qp_info.qp_num, 
-			    remote_qp_info.lid);
-    check (ret == 0, "Failed to modify qp to rts");
-
-    log (LOG_SUB_HEADER, "Start of IB Config");
-    log ("\tqp[%"PRIu32"] <-> qp[%"PRIu32"]", 
-	 ib_res.qp->qp_num, remote_qp_info.qp_num);
-    log ("\traddr[%"PRIu64"] <-> raddr[%"PRIu64"]", 
-	 local_qp_info.raddr, ib_res.raddr);
-    log (LOG_SUB_HEADER, "End of IB Config");
-
-    /* sync with clients */
-    n = sock_read (peer_sockfd, sock_buf, sizeof(SOCK_SYNC_MSG));
-    check (n == sizeof(SOCK_SYNC_MSG), "Failed to receive sync from client");
-    
-    n = sock_write (peer_sockfd, sock_buf, sizeof(SOCK_SYNC_MSG));
-    check (n == sizeof(SOCK_SYNC_MSG), "Failed to write sync to client");
-	
-    close (peer_sockfd);
-    close (sockfd);
-    
-    return 0;
-
- error:
-    if (peer_sockfd > 0) {
-	close (peer_sockfd);
-    }
-    if (sockfd > 0) {
-	close (sockfd);
-    }
-    
-    return -1;
-}
-
-int connect_qp_client ()
+int connect_qp ()
 {
     int ret	      = 0, n = 0;
-    int peer_sockfd   = 0;
-    char sock_buf[64] = {'\0'};
-
     struct QPInfo local_qp_info, remote_qp_info;
-
-    peer_sockfd = sock_create_connect (config_info.server_name,
-				       config_info.sock_port);
-    check (peer_sockfd > 0, "Failed to create peer_sockfd");
 
     local_qp_info.lid     = ib_res.port_attr.lid; 
     local_qp_info.qp_num  = ib_res.qp->qp_num; 
     local_qp_info.rkey    = ib_res.mr->rkey;
     local_qp_info.raddr   = (uintptr_t) ib_res.ib_buf;
    
-    /* send qp_info to server */    
-    ret = sock_set_qp_info (peer_sockfd, &local_qp_info);
-    check (ret == 0, "Failed to send qp_info to server");
-
-    /* get qp_info from server */    
-    ret = sock_get_qp_info (peer_sockfd, &remote_qp_info);
-    check (ret == 0, "Failed to get qp_info from server");
+    if (config_info.is_server) {
+        MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, 1, 0, MPI_COMM_WORLD);
+        MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    } else{
+        MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+    }
     
     /* store rkey and raddr info */
     ib_res.rkey  = remote_qp_info.rkey;
@@ -122,21 +44,9 @@ int connect_qp_client ()
 	 local_qp_info.raddr, ib_res.raddr);
     log (LOG_SUB_HEADER, "End of IB Config");
 
-    /* sync with server */
-    n = sock_write (peer_sockfd, sock_buf, sizeof(SOCK_SYNC_MSG));
-    check (n == sizeof(SOCK_SYNC_MSG), "Failed to write sync to client");
-    
-    n = sock_read (peer_sockfd, sock_buf, sizeof(SOCK_SYNC_MSG));
-    check (n == sizeof(SOCK_SYNC_MSG), "Failed to receive sync from client");
-
-    close (peer_sockfd);
     return 0;
 
  error:
-    if (peer_sockfd > 0) {
-	close (peer_sockfd);
-    }
-    
     return -1;
 }
 
@@ -213,11 +123,7 @@ int setup_ib ()
     check (ib_res.qp != NULL, "Failed to create qp");
 
     /* connect QP */
-    if (config_info.is_server) {
-	ret = connect_qp_server ();
-    } else {
-	ret = connect_qp_client ();
-    }
+	ret = connect_qp ();
     check (ret == 0, "Failed to connect qp");
 
     ibv_free_device_list (dev_list);

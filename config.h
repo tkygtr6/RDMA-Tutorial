@@ -9,9 +9,6 @@ struct ConfigInfo {
 
     int  msg_size;           /* the size of each echo message */
     int  num_concurr_msgs;   /* the number of messages can be sent concurrently */
-    
-    char *sock_port;         /* socket port number */
-    char *server_name;       /* server name */
 }__attribute__((aligned(64)));
 
 extern struct ConfigInfo config_info;

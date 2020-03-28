@@ -6,32 +6,42 @@
 #include "setup_ib.h"
 #include "client.h"
 #include "server.h"
+#include "mpi.h"
 
 FILE	*log_fp	     = NULL;
 
 int	init_env    ();
 void	destroy_env ();
 
+
+#include "unistd.h"
 int main (int argc, char *argv[])
 {
     int	ret = 0;
+    int myrank, nproc;
+    MPI_Init(NULL, NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
-    if (argc == 5) {
-	config_info.is_server	     = false;
-	config_info.server_name	     = argv[1];
-	config_info.msg_size	     = atoi (argv[2]); 
-	config_info.num_concurr_msgs = atoi (argv[3]);
-	config_info.sock_port	     = argv[4];
-    } else if (argc == 4) {
-	config_info.is_server	     = true;
-	config_info.msg_size	     = atoi (argv[1]); 
-	config_info.num_concurr_msgs = atoi (argv[2]);
-	config_info.sock_port	     = argv[3];
-    } else {
-	printf ("Server: %s msg_size num_concurr_msgs sock_port\n", argv[0]);
-	printf ("Client: %s server_name msg_size num_concurr_msgs sock_port\n", argv[0]);
-	return 0;
-    }    
+    if (nproc != 2) {
+        printf(" Error: the number of processes should be 2.\n");
+    }
+
+	config_info.is_server	     = myrank ? false : true;
+    if (config_info.is_server) {
+        if (argc == 3) {
+            config_info.num_concurr_msgs = atoi(argv[2]);
+        } else {
+            config_info.num_concurr_msgs = 100;
+        }
+        if (argc >= 2) {
+            config_info.msg_size = atoi(argv[1]);
+        } else{
+            config_info.msg_size	     = 100;
+        }
+    }
+    MPI_Bcast(&config_info.msg_size, sizeof(config_info.msg_size), MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&config_info.num_concurr_msgs, sizeof(config_info.msg_size), MPI_BYTE, 0, MPI_COMM_WORLD);
 
     ret = init_env ();
     check (ret == 0, "Failed to init env");
@@ -49,6 +59,7 @@ int main (int argc, char *argv[])
  error:
     close_ib_connection ();
     destroy_env         ();
+    MPI_Finalize();
     return ret;
 }    
 

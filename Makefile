@@ -1,10 +1,10 @@
-CC=gcc
+CC=mpicc
 CFLAGS=-Wall -O2
 INCLUDES=
 LDFLAGS=
 LIBS=-pthread -lrdmacm -libverbs
 
-SRCS=main.c client.c config.c ib.c server.c setup_ib.c sock.c
+SRCS=main.c client.c config.c ib.c server.c setup_ib.c
 OBJS=$(SRCS:.c=.o)
 PROG=rdma-tutorial
 

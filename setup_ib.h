@@ -24,7 +24,6 @@ extern struct IBRes ib_res;
 int  setup_ib ();
 void close_ib_connection ();
 
-int  connect_qp_server ();
-int  connect_qp_client ();
+int  connect_qp ();
 
 #endif /*setup_ib.h*/

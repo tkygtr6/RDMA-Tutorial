@@ -19,10 +19,6 @@ void print_config_info ()
     }
     log ("msg_size                  = %d", config_info.msg_size);
     log ("num_concurr_msgs          = %d", config_info.num_concurr_msgs);
-    log ("sock_port                 = %s", config_info.sock_port);
-    if (config_info.is_server == false) {
-	log ("server_name               = %s", config_info.server_name);
-    }
 
     log (LOG_SUB_HEADER, "End of Configuraion");
 }
