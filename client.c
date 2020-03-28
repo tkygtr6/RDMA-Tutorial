@@ -13,6 +13,7 @@ void *client_thread_func (void *arg)
 {
     int         ret		 = 0, n = 0;
     long	thread_id	 = (long) arg;
+    int         num_concurr_msgs= config_info.num_concurr_msgs;
     int         msg_size	 = config_info.msg_size;
 
     pthread_t   self;
@@ -48,42 +49,37 @@ void *client_thread_func (void *arg)
     ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
+    // check ACK from server
+    msg_start  = buf_ptr;
+    msg_end    = msg_start + msg_size - 1;
+    while ((*msg_start != 'A') && (*msg_end != 'A')) {
+    }
+    printf("Server get ready\n");
 
-    while (ops_count < TOT_NUM_OPS) {
-	/* loop till receive a msg from server */
-	while ((*msg_start != 'A') && (*msg_end != 'A')) {
-	}
+    int sum = 0;
+    int i;
+    for(i = 0; i < num_concurr_msgs; i++){
+        buf_offset = msg_size * i;
+        msg_start  = buf_ptr + buf_offset;
+        msg_end    = msg_start + msg_size - 1;
+        raddr      = raddr_base + buf_offset;
 
-	/* reset recv buffer */
-	memset ((char *)msg_start, '\0', msg_size);
-
-	/* send a msg back to the server */
-	ops_count += 1;
-	if ((ops_count % SIG_INTERVAL) == 0) {
-	    ret = post_write_signaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
-	} else {
-	    ret = post_write_unsignaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
-	}
-	
-	buf_offset = (buf_offset + msg_size) % buf_size;
-	msg_start  = buf_ptr + buf_offset;
-	msg_end    = msg_start + msg_size - 1;
-	raddr      = raddr_base + buf_offset;
-
-	if (ops_count == NUM_WARMING_UP_OPS) {
-	    gettimeofday (&start, NULL);
-	}
-
-	n = ibv_poll_cq (cq, num_wc, wc);
-	debug ("ops_count = %ld", ops_count);
+        ret = post_write_signaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
+        if (ret != IBV_WC_SUCCESS){
+            printf("Error, post_write_signaled failed, i = %d\n", i);
+        }
+        sum += ibv_poll_cq (cq, num_wc, wc);
+        if (wc->status != IBV_WC_SUCCESS){
+            printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
+        }
+        printf("i: %d, remaining: %d\n", i, i - sum + 1);
     }
 
-    gettimeofday (&end, NULL);
-    /* dump statistics */
-    duration   = (double)((end.tv_sec - start.tv_sec) * 1000000 + 
-			  (end.tv_usec - start.tv_usec));
-    throughput = (double)(ops_count) / duration;
-    log ("thread[%ld]: throughput = %f (Mops/s)",  thread_id, throughput);
+    printf("Wait phase begin\n");
+    while(sum < num_concurr_msgs){
+        sum += ibv_poll_cq (cq, num_wc, wc);
+        printf("i: %d, remaining: %d\n", i, i - sum + 1);
+    }
 
     free (wc);
     pthread_exit ((void *)0);

@@ -49,48 +49,25 @@ void *server_thread (void *arg)
     ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
-    /* pre-post writes */
-    for (i = 0; i < num_concurr_msgs; i++) {
-	post_write_unsignaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
-	buf_offset = (buf_offset + msg_size) % buf_size;
-	raddr      = raddr_base + buf_offset;
+    // Send Ack to client
+    msg_start  = buf_ptr;
+    msg_end    = msg_start + msg_size - 1;
+    raddr      = raddr_base;
+    ret = post_write_signaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
+    if (ret != IBV_WC_SUCCESS){
+        printf("\t Error, post_write_signaled failed\n");
     }
-    
-    while (ops_count < TOT_NUM_OPS) {
-        /* loop till receive a msg from server */
-        while ((*msg_start != 'A') && (*msg_end != 'A')) {
-        }	
 
-        /* reset recv buffer */
-        memset ((char *)msg_start, '\0', msg_size);
-
-        /* send a msg back to the server */
-	ops_count += 1;
-        if ((ops_count % SIG_INTERVAL) == 0) {
-            ret = post_write_signaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
-        } else {
-            ret = post_write_unsignaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
-        }
-
-        buf_offset = (buf_offset + msg_size) % buf_size;
+    for(i = 0; i < num_concurr_msgs; i++){
+        buf_offset = msg_size * i;
         msg_start  = buf_ptr + buf_offset;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
-	
-        if (ops_count == NUM_WARMING_UP_OPS) {
-            gettimeofday (&start, NULL);
-        }
-
-	n = ibv_poll_cq (cq, num_wc, wc);
-	debug ("ops_count = %ld", ops_count);
+        while ((*msg_start != 'A') && (*msg_end != 'A')) {
+        }	
+        printf("\t server finishes %d\n", i);
     }
-    gettimeofday (&end, NULL);
-
-    /* dump statistics */
-    duration   = (double)((end.tv_sec - start.tv_sec) * 1000000 +
-                          (end.tv_usec - start.tv_usec));
-    throughput = (double)(ops_count) / duration;
-    log ("thread[%ld]: throughput = %f (Mops/s)",  thread_id, throughput);
+    printf("\t server all finishes\n");
 
     free (wc);
     pthread_exit ((void *)0);
