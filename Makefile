@@ -1,8 +1,8 @@
 CC=gcc
-CFLAGS=-Wall -Werror -O2
+CFLAGS=-Wall -O2
 INCLUDES=
 LDFLAGS=
-LIBS=-pthread -lrdmacm
+LIBS=-pthread -lrdmacm -libverbs
 
 SRCS=main.c client.c config.c ib.c server.c setup_ib.c sock.c
 OBJS=$(SRCS:.c=.o)
@@ -10,7 +10,7 @@ PROG=rdma-tutorial
 
 all: $(PROG)
 
-debug: CFLAGS=-Wall -Werror -g -DDEBUG
+debug: CFLAGS=-Wall -g -DDEBUG
 debug: $(PROG)
 
 .c.o:
