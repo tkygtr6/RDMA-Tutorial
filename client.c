@@ -78,6 +78,8 @@ void *client_thread_func (void *arg)
             printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
         }
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
+
+        usleep(config_info.sleep_time);
     }
 
     printf("Wait phase begin\n");
