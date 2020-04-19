@@ -53,6 +53,7 @@ int connect_qp ()
 int setup_ib ()
 {
     int	ret		         = 0;
+    int i;
     struct ibv_device **dev_list = NULL;    
     memset (&ib_res, 0, sizeof(struct IBRes));
 
@@ -73,11 +74,7 @@ int setup_ib ()
     check(ret == 0, "Failed to query IB port information.");
     
     /* register mr */
-    /* set the buf_size (msg_size + 1) * num_concurr_msgs */
-    /* the recv buffer is of size msg_size * num_concurr_msgs */
-    /* followed by a sending buffer of size msg_size since we */
-    /* assume all msgs are of the same content */
-    ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs + 1);
+    ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs + 2);
     ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
     check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
 
@@ -88,12 +85,19 @@ int setup_ib ()
 			    IBV_ACCESS_REMOTE_WRITE);
     check (ib_res.mr != NULL, "Failed to register mr");
     
-    /* reset receiving buffer to all '0' */
-    size_t buf_len = config_info.msg_size * config_info.num_concurr_msgs;
+    /* initialize buffer */
+    /* server:  [A, \0, 0, 1, 2, 3, 4, ...] */
+    /* cliennt: [\0, A, \0, \0, \0, \0, \0, ...] */
+    size_t buf_len = config_info.msg_size * (config_info.num_concurr_msgs + 2);
     memset (ib_res.ib_buf, '\0', buf_len);
-    
-    /* set sending buffer to all 'A' */
-    memset (ib_res.ib_buf + buf_len, 'A', config_info.msg_size);
+    if (config_info.is_server) {
+        memset (ib_res.ib_buf, 'A', config_info.msg_size);
+        for(i = 0; i < config_info.num_concurr_msgs; i++){
+            memset (ib_res.ib_buf + config_info.msg_size * (i + 2), (char) i, config_info.msg_size);
+        }
+    }else{
+        memset (ib_res.ib_buf + config_info.msg_size, 'A', config_info.msg_size);
+    }
 
     /* query IB device attr */
     ret = ibv_query_device(ib_res.ctx, &ib_res.dev_attr);

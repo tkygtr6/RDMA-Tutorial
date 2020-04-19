@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include "debug.h"
 #include "config.h"
@@ -12,6 +13,7 @@
 void *client_thread_func (void *arg)
 {
     int         ret		 = 0, n = 0;
+    int i;
     long	thread_id	 = (long) arg;
     int         num_concurr_msgs= config_info.num_concurr_msgs;
     int         msg_size	 = config_info.msg_size;
@@ -49,22 +51,25 @@ void *client_thread_func (void *arg)
     ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
+    // for(i = 0; i < 10; i++){
+    //     printf("i: %d, %d, %d\n", i, *(buf_ptr + msg_size * i), *(buf_ptr + msg_size * (i + 1) - 1));
+    // }
+
     // check ACK from server
     msg_start  = buf_ptr;
     msg_end    = msg_start + msg_size - 1;
     while ((*msg_start != 'A') && (*msg_end != 'A')) {
     }
-    printf("Server get ready\n");
+    printf("client received ACK from server\n");
 
     int sum = 0;
-    int i;
     for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * i;
+        buf_offset = msg_size * (i + 2);
         msg_start  = buf_ptr + buf_offset;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
 
-        ret = post_write_signaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
+        ret = post_read_signaled (msg_size, lkey, 0, qp, msg_start, raddr, rkey);
         if (ret != IBV_WC_SUCCESS){
             printf("Error, post_write_signaled failed, i = %d\n", i);
         }
@@ -78,8 +83,27 @@ void *client_thread_func (void *arg)
     printf("Wait phase begin\n");
     while(sum < num_concurr_msgs){
         sum += ibv_poll_cq (cq, num_wc, wc);
+        if (wc->status != IBV_WC_SUCCESS){
+            printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
+        }
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
     }
+
+    ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr + msg_size, raddr_base + msg_size, rkey);
+    if (ret != IBV_WC_SUCCESS){
+        printf("Error, post_write_signaled failed\n");
+    }
+
+    for(i = 0; i < num_concurr_msgs; i++){
+        buf_offset = msg_size * (i + 2);
+        msg_start  = buf_ptr + buf_offset;
+        msg_end    = msg_start + msg_size - 1;
+        raddr      = raddr_base + buf_offset;
+        // printf("i: %d, %d, %d\n", i, *(msg_start), *(msg_end));
+        assert(*msg_start == (char) i);
+        assert(*msg_end == (char) i);
+    }
+    printf("\t client all finishes\n");
 
     free (wc);
     pthread_exit ((void *)0);

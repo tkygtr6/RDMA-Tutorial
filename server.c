@@ -49,25 +49,23 @@ void *server_thread (void *arg)
     ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
+    // for(i = 0; i < 10; i++){
+    //     printf("i: %d, %d, %d\n", i, *(buf_ptr + msg_size * i), *(buf_ptr + msg_size * (i + 1) - 1));
+    // }
+
     // Send Ack to client
-    msg_start  = buf_ptr;
-    msg_end    = msg_start + msg_size - 1;
-    raddr      = raddr_base;
-    ret = post_write_signaled (msg_size, lkey, 0, qp, send_buf_ptr, raddr, rkey);
+    ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr, raddr_base, rkey);
     if (ret != IBV_WC_SUCCESS){
-        printf("\t Error, post_write_signaled failed\n");
+        printf("\t Error, post_read_signaled failed\n");
     }
 
-    for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * i;
-        msg_start  = buf_ptr + buf_offset;
-        msg_end    = msg_start + msg_size - 1;
-        raddr      = raddr_base + buf_offset;
-        while ((*msg_start != 'A') && (*msg_end != 'A')) {
-        }	
-        printf("\t server finishes %d\n", i);
-    }
-    printf("\t server all finishes\n");
+    // Wait Ack from client
+    usleep(500000);
+    msg_start = buf_ptr + msg_size;
+    msg_end = msg_start + msg_size - 1;
+    while ((*msg_start != 'A') && (*msg_end != 'A')) {
+    }	
+    printf("\t server received ACK from client\n");
 
     free (wc);
     pthread_exit ((void *)0);
