@@ -58,11 +58,12 @@ int setup_ib ()
     memset (&ib_res, 0, sizeof(struct IBRes));
 
     /* get IB device list */
-    dev_list = ibv_get_device_list(NULL);
+    int num_devices;
+    dev_list = ibv_get_device_list(&num_devices);
     check(dev_list != NULL, "Failed to get ib device list.");
 
     /* create IB context */
-    ib_res.ctx = ibv_open_device(*dev_list);
+    ib_res.ctx = ibv_open_device(dev_list[config_info.is_server ? 0:1]);
     check(ib_res.ctx != NULL, "Failed to open ib device.");
 
     /* allocate protection domain */
@@ -78,11 +79,28 @@ int setup_ib ()
     ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
     check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
 
-    ib_res.mr = ibv_reg_mr (ib_res.pd, (void *)ib_res.ib_buf,
-			    ib_res.ib_buf_size,
-			    IBV_ACCESS_LOCAL_WRITE |
-			    IBV_ACCESS_REMOTE_READ |
-			    IBV_ACCESS_REMOTE_WRITE);
+    /*ib_res.mr = ibv_reg_mr (ib_res.pd, (void *)ib_res.ib_buf,*/
+                /*ib_res.ib_buf_size,*/
+                /*IBV_ACCESS_LOCAL_WRITE |*/
+                /*IBV_ACCESS_REMOTE_READ |*/
+                /*IBV_ACCESS_REMOTE_WRITE);*/
+
+    struct ibv_exp_reg_mr_in in;
+    in.pd = ib_res.pd;
+    /*in.addr = ib_res.ib_buf;*/
+    /*in.length = ib_res.ib_buf_size;*/
+
+    in.addr = 0;
+    in.length = IBV_EXP_IMPLICIT_MR_SIZE;
+    /*in.length = UINT64_MAX;*/
+    in.exp_access = IBV_EXP_ACCESS_ON_DEMAND |
+                    IBV_ACCESS_LOCAL_WRITE |
+                    IBV_ACCESS_REMOTE_READ |
+                    IBV_ACCESS_REMOTE_WRITE |
+                    IBV_ACCESS_REMOTE_ATOMIC;
+    in.comp_mask = 0;
+    ib_res.mr = ibv_exp_reg_mr (&in);
+
     check (ib_res.mr != NULL, "Failed to register mr");
     
     /* initialize buffer */
@@ -104,8 +122,8 @@ int setup_ib ()
     check(ret==0, "Failed to query device");
     
     /* create cq */
-    ib_res.cq = ibv_create_cq (ib_res.ctx, ib_res.dev_attr.max_cqe, 
-			       NULL, NULL, 0);
+    /*ib_res.cq = ibv_create_cq (ib_res.ctx, ib_res.dev_attr.max_cqe, NULL, NULL, 0);*/
+    ib_res.cq = ibv_create_cq (ib_res.ctx, 4096, NULL, NULL, 0);
     check (ib_res.cq != NULL, "Failed to create cq");
     
     /* create qp */
@@ -113,11 +131,9 @@ int setup_ib ()
         .send_cq = ib_res.cq,
         .recv_cq = ib_res.cq,
         .cap = {
-            //.max_send_wr = ib_res.dev_attr.max_qp_wr,
-            .max_send_wr = 8192,
-            //.max_recv_wr = ib_res.dev_attr.max_qp_wr,
-            .max_recv_wr = 8192,
-            .max_send_sge = 1,
+            .max_send_wr = 256,
+            .max_recv_wr = 0,
+            .max_send_sge = 3,
             .max_recv_sge = 1,
         },
         .qp_type = IBV_QPT_RC,

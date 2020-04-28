@@ -45,15 +45,20 @@ void *client_thread_func (void *arg)
     check (wc != NULL, "thread[%ld]: failed to allocate wc.", thread_id);
 
     /* set thread affinity */
-    CPU_ZERO (&cpuset);
-    CPU_SET  ((int)thread_id, &cpuset);
-    self = pthread_self ();
-    ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
-    check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
+    /*CPU_ZERO (&cpuset);*/
+    /*CPU_SET  ((int)thread_id, &cpuset);*/
+    /*self = pthread_self ();*/
+    /*ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);*/
+    /*check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);*/
 
     // for(i = 0; i < 10; i++){
     //     printf("i: %d, %d, %d\n", i, *(buf_ptr + msg_size * i), *(buf_ptr + msg_size * (i + 1) - 1));
     // }
+
+    char *buf_ = (char *) malloc(sizeof(char) * BUF_SIZE);
+    for(i = 0; i < BUF_SIZE; i++){
+        buf_[i] = i;
+    }
 
     // check ACK from server
     msg_start  = buf_ptr;
@@ -63,6 +68,7 @@ void *client_thread_func (void *arg)
     printf("client received ACK from server\n");
 
     int sum = 0;
+
     for(i = 0; i < num_concurr_msgs; i++){
         buf_offset = msg_size * (i + 2);
         msg_start  = buf_ptr + buf_offset;
@@ -70,12 +76,16 @@ void *client_thread_func (void *arg)
         raddr      = raddr_base + buf_offset;
 
         ret = post_read_signaled (msg_size, lkey, 0, qp, msg_start, raddr, rkey);
+
         if (ret != IBV_WC_SUCCESS){
             printf("Error, post_write_signaled failed, i = %d\n", i);
         }
         sum += ibv_poll_cq (cq, num_wc, wc);
         if (wc->status != IBV_WC_SUCCESS){
-            printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
+            printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
+            if (wc->status == IBV_WC_RETRY_EXC_ERR){
+                printf("RETRANSMISSION\n");
+            }
         }
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
 
@@ -88,7 +98,7 @@ void *client_thread_func (void *arg)
         if (wc->status != IBV_WC_SUCCESS){
             printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
         }
-        printf("i: %d, remaining: %d\n", i, i - sum + 1);
+        // printf("i: %d, remaining: %d\n", i, i - sum + 1);
     }
 
     ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr + msg_size, raddr_base + msg_size, rkey);

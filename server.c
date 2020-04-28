@@ -43,15 +43,21 @@ void *server_thread (void *arg)
     check (wc != NULL, "thread[%ld]: failed to allocate wc.", thread_id);
 
     /* set thread affinity */
-    CPU_ZERO (&cpuset);
-    CPU_SET  ((int)thread_id, &cpuset);
-    self = pthread_self ();
-    ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
-    check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
+    /*CPU_ZERO (&cpuset);*/
+    /*CPU_SET  ((int)thread_id, &cpuset);*/
+    /*self = pthread_self ();*/
+    /*ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);*/
+    /*check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);*/
 
     // for(i = 0; i < 10; i++){
     //     printf("i: %d, %d, %d\n", i, *(buf_ptr + msg_size * i), *(buf_ptr + msg_size * (i + 1) - 1));
     // }
+
+    // char buf_[BUF_SIZE];
+    char *buf_ = (char *) malloc(sizeof(char) * BUF_SIZE);
+    for(i = 0; i < BUF_SIZE; i++){
+        buf_[i] = i;
+    }
 
     // Send Ack to client
     ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr, raddr_base, rkey);

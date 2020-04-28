@@ -3,6 +3,8 @@
 
 #include <infiniband/verbs.h>
 
+#define BUF_SIZE 100000000
+
 struct IBRes {
     struct ibv_context		*ctx;
     struct ibv_pd		*pd;
