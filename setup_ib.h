@@ -10,6 +10,7 @@ struct IBRes {
     struct ibv_pd		*pd;
     struct ibv_mr		*mr;
     struct ibv_cq		*cq;
+    struct ibv_srq		*srq;
     struct ibv_qp		*qp;
     struct ibv_port_attr	 port_attr;
     struct ibv_device_attr	 dev_attr;

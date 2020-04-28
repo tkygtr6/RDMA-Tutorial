@@ -79,20 +79,11 @@ int setup_ib ()
     ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
     check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
 
-    /*ib_res.mr = ibv_reg_mr (ib_res.pd, (void *)ib_res.ib_buf,*/
-                /*ib_res.ib_buf_size,*/
-                /*IBV_ACCESS_LOCAL_WRITE |*/
-                /*IBV_ACCESS_REMOTE_READ |*/
-                /*IBV_ACCESS_REMOTE_WRITE);*/
-
     struct ibv_exp_reg_mr_in in;
     in.pd = ib_res.pd;
-    /*in.addr = ib_res.ib_buf;*/
-    /*in.length = ib_res.ib_buf_size;*/
 
     in.addr = 0;
     in.length = IBV_EXP_IMPLICIT_MR_SIZE;
-    /*in.length = UINT64_MAX;*/
     in.exp_access = IBV_EXP_ACCESS_ON_DEMAND |
                     IBV_ACCESS_LOCAL_WRITE |
                     IBV_ACCESS_REMOTE_READ |
@@ -122,19 +113,30 @@ int setup_ib ()
     check(ret==0, "Failed to query device");
     
     /* create cq */
-    /*ib_res.cq = ibv_create_cq (ib_res.ctx, ib_res.dev_attr.max_cqe, NULL, NULL, 0);*/
     ib_res.cq = ibv_create_cq (ib_res.ctx, 4096, NULL, NULL, 0);
     check (ib_res.cq != NULL, "Failed to create cq");
     
+    /* create srq */
+    struct ibv_srq_init_attr srq_init_attr = {
+        .srq_context = NULL,
+        .attr        = {
+            .max_wr  = 64,
+            .max_sge =  1,
+            .srq_limit = 0,
+        },
+    };
+    ib_res.srq = ibv_create_srq(ib_res.pd, &srq_init_attr);
+
     /* create qp */
     struct ibv_qp_init_attr qp_init_attr = {
         .send_cq = ib_res.cq,
         .recv_cq = ib_res.cq,
+        .srq = ib_res.srq,
         .cap = {
             .max_send_wr = 256,
             .max_recv_wr = 0,
             .max_send_sge = 3,
-            .max_recv_sge = 1,
+            .max_recv_sge = 0,
         },
         .qp_type = IBV_QPT_RC,
     };
