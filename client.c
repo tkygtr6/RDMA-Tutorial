@@ -89,7 +89,7 @@ void *client_thread_func (void *arg)
             printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
             if (wc->status == IBV_WC_RETRY_EXC_ERR){
                 printf("RETRANSMISSION ERROR\n");
-                /*exit(1);*/
+                exit(1);
             }
         }
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
@@ -104,7 +104,7 @@ void *client_thread_func (void *arg)
             printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
             if (wc->status == IBV_WC_RETRY_EXC_ERR){
                 printf("RETRANSMISSION ERROR\n");
-                /*exit(1);*/
+                exit(1);
             }
         }
          /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/

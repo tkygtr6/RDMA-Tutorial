@@ -10,13 +10,13 @@
 
 struct IBRes ib_res;
 
-int connect_qp ()
+int connect_qp (struct ibv_qp *qp)
 {
     int ret	      = 0, n = 0;
     struct QPInfo local_qp_info, remote_qp_info;
 
     local_qp_info.lid     = ib_res.port_attr.lid; 
-    local_qp_info.qp_num  = ib_res.qp->qp_num; 
+    local_qp_info.qp_num  = qp->qp_num; 
     local_qp_info.rkey    = ib_res.mr->rkey;
     local_qp_info.raddr   = (uintptr_t) ib_res.ib_buf;
    
@@ -33,10 +33,7 @@ int connect_qp ()
     ib_res.raddr = remote_qp_info.raddr;
     
     /* change QP state to RTS */    	
-    ret = modify_qp_to_rts (ib_res.qp, remote_qp_info.qp_num, 
-			    remote_qp_info.lid);
-    check (ret == 0, "Failed to modify qp to rts");
-    ret = modify_qp_to_rts (ib_res.qp_, remote_qp_info.qp_num, 
+    ret = modify_qp_to_rts (qp, remote_qp_info.qp_num, 
 			    remote_qp_info.lid);
     check (ret == 0, "Failed to modify qp to rts");
 
@@ -145,11 +142,14 @@ int setup_ib ()
     };
 
     ib_res.qp = ibv_create_qp (ib_res.pd, &qp_init_attr);
-    ib_res.qp_ = ibv_create_qp (ib_res.pd, &qp_init_attr);
     check (ib_res.qp != NULL, "Failed to create qp");
+    ib_res.qp_ = ibv_create_qp (ib_res.pd, &qp_init_attr);
+    check (ib_res.qp_ != NULL, "Failed to create qp");
 
     /* connect QP */
-	ret = connect_qp ();
+	ret = connect_qp (ib_res.qp);
+    check (ret == 0, "Failed to connect qp");
+	ret = connect_qp (ib_res.qp_);
     check (ret == 0, "Failed to connect qp");
 
     ibv_free_device_list (dev_list);
