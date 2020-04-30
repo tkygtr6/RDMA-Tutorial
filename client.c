@@ -75,7 +75,11 @@ void *client_thread_func (void *arg)
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
 
-        ret = post_read_signaled (msg_size, lkey, 0, qp, msg_start, raddr, rkey);
+        if (i % 2){
+            ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, msg_start, raddr, rkey);
+        }else{
+            ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp_, msg_start, raddr, rkey);
+        }
 
         if (ret != IBV_WC_SUCCESS){
             printf("Error, post_write_signaled failed, i = %d\n", i);
@@ -84,7 +88,8 @@ void *client_thread_func (void *arg)
         if (wc->status != IBV_WC_SUCCESS){
             printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
             if (wc->status == IBV_WC_RETRY_EXC_ERR){
-                printf("RETRANSMISSION\n");
+                printf("RETRANSMISSION ERROR\n");
+                /*exit(1);*/
             }
         }
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
@@ -97,8 +102,12 @@ void *client_thread_func (void *arg)
         sum += ibv_poll_cq (cq, num_wc, wc);
         if (wc->status != IBV_WC_SUCCESS){
             printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
+            if (wc->status == IBV_WC_RETRY_EXC_ERR){
+                printf("RETRANSMISSION ERROR\n");
+                /*exit(1);*/
+            }
         }
-        // printf("i: %d, remaining: %d\n", i, i - sum + 1);
+         /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
     }
 
     ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr + msg_size, raddr_base + msg_size, rkey);
@@ -111,7 +120,6 @@ void *client_thread_func (void *arg)
         msg_start  = buf_ptr + buf_offset;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
-        // printf("i: %d, %d, %d\n", i, *(msg_start), *(msg_end));
         assert(*msg_start == (char) i);
         assert(*msg_end == (char) i);
     }

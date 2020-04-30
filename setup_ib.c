@@ -36,6 +36,9 @@ int connect_qp ()
     ret = modify_qp_to_rts (ib_res.qp, remote_qp_info.qp_num, 
 			    remote_qp_info.lid);
     check (ret == 0, "Failed to modify qp to rts");
+    ret = modify_qp_to_rts (ib_res.qp_, remote_qp_info.qp_num, 
+			    remote_qp_info.lid);
+    check (ret == 0, "Failed to modify qp to rts");
 
     log (LOG_SUB_HEADER, "IB Config");
     log ("\tqp[%"PRIu32"] <-> qp[%"PRIu32"]", 
@@ -142,6 +145,7 @@ int setup_ib ()
     };
 
     ib_res.qp = ibv_create_qp (ib_res.pd, &qp_init_attr);
+    ib_res.qp_ = ibv_create_qp (ib_res.pd, &qp_init_attr);
     check (ib_res.qp != NULL, "Failed to create qp");
 
     /* connect QP */
