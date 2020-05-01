@@ -28,44 +28,43 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
 
     /* Change QP state to RTR */
     {
-	struct ibv_exp_qp_attr  qp_attr = {
-	    .qp_state           = IBV_QPS_RTR,
-	    .path_mtu           = IBV_MTU_4096,
-	    .dest_qp_num        = target_qp_num,
-	    .rq_psn             = 0,
-	    .max_dest_rd_atomic = 1,
-	    .min_rnr_timer      = 13,
-	    .ah_attr.is_global  = 0,
-	    .ah_attr.dlid       = target_lid,
-	    .ah_attr.sl         = IB_SL,
-	    .ah_attr.src_path_bits = 0,
-	    .ah_attr.port_num      = IB_PORT,
-	};
+    struct ibv_exp_qp_attr  qp_attr = {
+        .qp_state           = IBV_QPS_RTR,
+        .dest_qp_num        = target_qp_num,
+        .rq_psn             = 0,
+        .path_mtu           = IBV_MTU_4096,
+        .max_dest_rd_atomic = 4,
+        .min_rnr_timer      = 13,
+        .ah_attr.dlid       = target_lid,
+        .ah_attr.sl         = IB_SL,
+        .ah_attr.src_path_bits = 0,
+        .ah_attr.port_num      = IB_PORT,
+    };
 
-	ret = ibv_exp_modify_qp(qp, &qp_attr,
-			    IBV_QP_STATE | IBV_QP_AV |
-			    IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
-			    IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC |
-			    IBV_QP_MIN_RNR_TIMER);
-	check (ret == 0, "Failed to change qp to rtr.");
+    ret = ibv_exp_modify_qp(qp, &qp_attr,
+                IBV_QP_STATE | IBV_QP_AV |
+                IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
+                IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC |
+                IBV_QP_MIN_RNR_TIMER);
+    check (ret == 0, "Failed to change qp to rtr.");
     }
 
-    /* Change QP state to RTS */
+    //[> Change QP state to RTS <]
     {
-	struct ibv_exp_qp_attr  qp_attr = {
-	    .qp_state      = IBV_QPS_RTS,
-	    .timeout       = 18,
-	    .retry_cnt     = 0,
-	    .rnr_retry     = 3,
-	    .sq_psn        = 0,
-	    .max_rd_atomic = 1,
-	};
+    struct ibv_exp_qp_attr  qp_attr = {
+        .qp_state      = IBV_QPS_RTS,
+        .sq_psn        = 0,
+        .timeout       = 18,
+        .rnr_retry     = 7,
+        .retry_cnt     = 0,
+        .max_rd_atomic = 4,
+    };
 
-	ret = ibv_exp_modify_qp (qp, &qp_attr,
-			     IBV_QP_STATE | IBV_QP_TIMEOUT |
-			     IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY |
-			     IBV_QP_SQ_PSN | IBV_QP_MAX_QP_RD_ATOMIC);
-	check (ret == 0, "Failed to modify qp to RTS.");
+    ret = ibv_exp_modify_qp (qp, &qp_attr,
+                 IBV_QP_STATE | IBV_QP_TIMEOUT |
+                 IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY |
+                 IBV_QP_SQ_PSN | IBV_QP_MAX_QP_RD_ATOMIC);
+    check (ret == 0, "Failed to modify qp to RTS.");
     }
 
     return 0;
