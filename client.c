@@ -75,11 +75,7 @@ void *client_thread_func (void *arg)
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
 
-        if (i % 2){
-            ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, msg_start, raddr, rkey);
-        }else{
-            ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp_, msg_start, raddr, rkey);
-        }
+        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, msg_start, raddr, rkey);
 
         if (ret != IBV_WC_SUCCESS){
             printf("Error, post_write_signaled failed, i = %d\n", i);

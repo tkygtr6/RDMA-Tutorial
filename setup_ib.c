@@ -143,13 +143,9 @@ int setup_ib ()
 
     ib_res.qp = ibv_create_qp (ib_res.pd, &qp_init_attr);
     check (ib_res.qp != NULL, "Failed to create qp");
-    ib_res.qp_ = ibv_create_qp (ib_res.pd, &qp_init_attr);
-    check (ib_res.qp_ != NULL, "Failed to create qp");
 
     /* connect QP */
 	ret = connect_qp (ib_res.qp);
-    check (ret == 0, "Failed to connect qp");
-	ret = connect_qp (ib_res.qp_);
     check (ret == 0, "Failed to connect qp");
 
     ibv_free_device_list (dev_list);
