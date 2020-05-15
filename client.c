@@ -13,7 +13,7 @@
 void *client_thread_func (void *arg)
 {
     int         ret		 = 0, n = 0;
-    int i;
+    int i, j;
     long	thread_id	 = (long) arg;
     int         num_concurr_msgs= config_info.num_concurr_msgs;
     int         msg_size	 = config_info.msg_size;
@@ -68,6 +68,7 @@ void *client_thread_func (void *arg)
     printf("client received ACK from server\n");
 
     int sum = 0;
+    int num_finished;
 
     struct timeval time1;
     struct timeval time2;
@@ -84,12 +85,15 @@ void *client_thread_func (void *arg)
         if (ret != IBV_WC_SUCCESS){
             printf("Error, post_write_signaled failed, i = %d\n", i);
         }
-        sum += ibv_poll_cq (cq, num_wc, wc);
-        if (wc->status != IBV_WC_SUCCESS){
-            printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
-            if (wc->status == IBV_WC_RETRY_EXC_ERR){
-                printf("RETRANSMISSION ERROR\n");
-                exit(1);
+        num_finished = ibv_poll_cq (cq, num_wc, wc);
+        sum += num_finished;
+        for(j = 0; j < num_finished; j++){
+            if (wc[j].status != IBV_WC_SUCCESS){
+                printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
+                if (wc[j].status == IBV_WC_RETRY_EXC_ERR){
+                    printf("RETRANSMISSION ERROR\n");
+                    exit(1);
+                }
             }
         }
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
@@ -99,15 +103,18 @@ void *client_thread_func (void *arg)
 
     printf("Wait phase begin\n");
     while(sum < num_concurr_msgs){
-        sum += ibv_poll_cq (cq, num_wc, wc);
-        if (wc->status != IBV_WC_SUCCESS){
-            printf("Error: ib_poll_cq failed. i = %d, sum = %d\n", i, sum);
-            if (wc->status == IBV_WC_RETRY_EXC_ERR){
-                printf("RETRANSMISSION ERROR\n");
-                exit(1);
+        num_finished = ibv_poll_cq (cq, num_wc, wc);
+        sum += num_finished;
+        for(j = 0; j < num_finished; j++){
+            if (wc[j].status != IBV_WC_SUCCESS){
+                printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
+                if (wc[j].status == IBV_WC_RETRY_EXC_ERR){
+                    printf("RETRANSMISSION ERROR\n");
+                    exit(1);
+                }
             }
         }
-         /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
+        /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
     }
     gettimeofday(&time2, NULL);
     printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
