@@ -69,6 +69,10 @@ void *client_thread_func (void *arg)
 
     int sum = 0;
 
+    struct timeval time1;
+    struct timeval time2;
+
+    gettimeofday(&time1, NULL);
     for(i = 0; i < num_concurr_msgs; i++){
         buf_offset = msg_size * (i + 2);
         msg_start  = buf_ptr + buf_offset;
@@ -105,6 +109,8 @@ void *client_thread_func (void *arg)
         }
          /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
     }
+    gettimeofday(&time2, NULL);
+    printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
     ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr + msg_size, raddr_base + msg_size, rkey);
     if (ret != IBV_WC_SUCCESS){
