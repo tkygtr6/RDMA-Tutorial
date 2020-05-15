@@ -116,27 +116,15 @@ int setup_ib ()
     ib_res.cq = ibv_create_cq (ib_res.ctx, 4096, NULL, NULL, 0);
     check (ib_res.cq != NULL, "Failed to create cq");
     
-    /* create srq */
-    struct ibv_srq_init_attr srq_init_attr = {
-        .srq_context = NULL,
-        .attr        = {
-            .max_wr  = 64,
-            .max_sge =  1,
-            .srq_limit = 0,
-        },
-    };
-    ib_res.srq = ibv_create_srq(ib_res.pd, &srq_init_attr);
-
     /* create qp */
     struct ibv_qp_init_attr qp_init_attr = {
         .send_cq = ib_res.cq,
         .recv_cq = ib_res.cq,
-        .srq = ib_res.srq,
         .cap = {
             .max_send_wr = 256,
-            .max_recv_wr = 0,
+            .max_recv_wr = 256,
             .max_send_sge = 3,
-            .max_recv_sge = 0,
+            .max_recv_sge = 3,
         },
         .qp_type = IBV_QPT_RC,
     };
