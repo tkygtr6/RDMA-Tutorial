@@ -10,6 +10,7 @@ struct ConfigInfo {
     int  msg_size;           /* the size of each echo message */
     int  num_concurr_msgs;   /* the number of messages can be sent concurrently */
     int  sleep_time;
+    int  retry_cnt;
 }__attribute__((aligned(64)));
 
 extern struct ConfigInfo config_info;

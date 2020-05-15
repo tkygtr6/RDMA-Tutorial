@@ -3,6 +3,7 @@
 
 #include "ib.h"
 #include "debug.h"
+#include "config.h"
 
 int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target_lid)
 {
@@ -56,7 +57,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
         .sq_psn        = 0,
         .timeout       = 18,
         .rnr_retry     = 7,
-        .retry_cnt     = 0,
+        .retry_cnt     = config_info.retry_cnt,
         .max_rd_atomic = 4,
     };
 
