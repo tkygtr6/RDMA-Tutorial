@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <mpi.h>
 
 #include "debug.h"
 #include "config.h"
@@ -12,7 +13,7 @@
 
 void *client_thread_func (void *arg)
 {
-    int         ret		 = 0, n = 0;
+    int ret = 0;
     int i, j;
     long	thread_id	 = (long) arg;
     int         num_concurr_msgs= config_info.num_concurr_msgs;
@@ -28,44 +29,23 @@ void *client_thread_func (void *arg)
     uint32_t             lkey	      = ib_res.mr->lkey;
     char		*buf_ptr      = ib_res.ib_buf;
     int			 buf_offset   = 0;
-    size_t               buf_size     = ib_res.ib_buf_size - msg_size;
     uint32_t             rkey	      = ib_res.rkey;
     uint64_t             raddr_base   = ib_res.raddr;
     uint64_t             raddr        = raddr_base;
     volatile char       *msg_start    = buf_ptr;
     volatile char       *msg_end      = msg_start + msg_size - 1;
-    char                *send_buf_ptr = buf_ptr + buf_size;
-
-    struct timeval      start, end;
-    long                ops_count  = 0;
-    double              duration   = 0.0;
-    double              throughput = 0.0;
 
     wc = (struct ibv_wc *) calloc (num_wc, sizeof(struct ibv_wc));
     check (wc != NULL, "thread[%ld]: failed to allocate wc.", thread_id);
 
     /* set thread affinity */
-    /*CPU_ZERO (&cpuset);*/
-    /*CPU_SET  ((int)thread_id, &cpuset);*/
-    /*self = pthread_self ();*/
-    /*ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);*/
-    /*check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);*/
+    CPU_ZERO (&cpuset);
+    CPU_SET  ((int)thread_id, &cpuset);
+    self = pthread_self ();
+    ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
+    check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
-    // for(i = 0; i < 10; i++){
-    //     printf("i: %d, %d, %d\n", i, *(buf_ptr + msg_size * i), *(buf_ptr + msg_size * (i + 1) - 1));
-    // }
-
-    char *buf_ = (char *) malloc(sizeof(char) * BUF_SIZE);
-    for(i = 0; i < BUF_SIZE; i++){
-        buf_[i] = i;
-    }
-
-    // check ACK from server
-    msg_start  = buf_ptr;
-    msg_end    = msg_start + msg_size - 1;
-    while ((*msg_start != 'A') && (*msg_end != 'A')) {
-    }
-    printf("client received ACK from server\n");
+    MPI_Barrier(MPI_COMM_WORLD);
 
     int sum = 0;
     int num_finished;
@@ -75,27 +55,16 @@ void *client_thread_func (void *arg)
 
     gettimeofday(&time1, NULL);
     for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * (i + 2);
+        buf_offset = msg_size * i;
         msg_start  = buf_ptr + buf_offset;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
 
         ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, msg_start, raddr, rkey);
-
         if (ret != IBV_WC_SUCCESS){
             printf("Error, post_write_signaled failed, i = %d\n", i);
         }
-        num_finished = ibv_poll_cq (cq, num_wc, wc);
-        sum += num_finished;
-        for(j = 0; j < num_finished; j++){
-            if (wc[j].status != IBV_WC_SUCCESS){
-                printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
-                if (wc[j].status == IBV_WC_RETRY_EXC_ERR){
-                    printf("RETRANSMISSION ERROR\n");
-                    exit(1);
-                }
-            }
-        }
+
         printf("i: %d, remaining: %d\n", i, i - sum + 1);
 
         usleep(config_info.sleep_time);
@@ -119,13 +88,10 @@ void *client_thread_func (void *arg)
     gettimeofday(&time2, NULL);
     printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
-    ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr + msg_size, raddr_base + msg_size, rkey);
-    if (ret != IBV_WC_SUCCESS){
-        printf("Error, post_write_signaled failed\n");
-    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * (i + 2);
+        buf_offset = msg_size * i;
         msg_start  = buf_ptr + buf_offset;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <sys/time.h>
+#include <mpi.h>
 
 #include "debug.h"
 #include "ib.h"
@@ -11,75 +12,27 @@
 
 void *server_thread (void *arg)
 {
-    int         ret             = 0, i = 0, n = 0;
+    int ret = 0;
     long        thread_id       = (long) arg;
-    int         num_concurr_msgs= config_info.num_concurr_msgs;
-    int         msg_size        = config_info.msg_size;
 
     pthread_t   self;
     cpu_set_t   cpuset;
 
-    int                  num_wc       = 20;
-    struct ibv_qp       *qp           = ib_res.qp;
-    struct ibv_cq       *cq           = ib_res.cq;
-    struct ibv_wc       *wc           = NULL;
-    uint32_t             lkey         = ib_res.mr->lkey;
-    char                *buf_ptr      = ib_res.ib_buf;
-    int                  buf_offset   = 0;
-    size_t               buf_size     = ib_res.ib_buf_size - msg_size;
-    uint32_t             rkey         = ib_res.rkey;
-    uint64_t             raddr_base   = ib_res.raddr;
-    uint64_t             raddr        = ib_res.raddr;
-    volatile char       *msg_start    = buf_ptr;
-    volatile char       *msg_end      = msg_start + msg_size - 1;
-    char                *send_buf_ptr = buf_ptr + buf_size;
-
-    struct timeval      start, end;
-    long                ops_count  = 0;
-    double              duration   = 0.0;
-    double              throughput = 0.0;
-
-    wc = (struct ibv_wc *) calloc (num_wc, sizeof(struct ibv_wc));
-    check (wc != NULL, "thread[%ld]: failed to allocate wc.", thread_id);
-
     /* set thread affinity */
-    /*CPU_ZERO (&cpuset);*/
-    /*CPU_SET  ((int)thread_id, &cpuset);*/
-    /*self = pthread_self ();*/
-    /*ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);*/
-    /*check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);*/
+    CPU_ZERO (&cpuset);
+    CPU_SET  ((int)thread_id, &cpuset);
+    self = pthread_self ();
+    ret  = pthread_setaffinity_np (self, sizeof(cpu_set_t), &cpuset);
+    check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
-    // for(i = 0; i < 10; i++){
-    //     printf("i: %d, %d, %d\n", i, *(buf_ptr + msg_size * i), *(buf_ptr + msg_size * (i + 1) - 1));
-    // }
+    MPI_Barrier(MPI_COMM_WORLD);
 
-    // char buf_[BUF_SIZE];
-    char *buf_ = (char *) malloc(sizeof(char) * BUF_SIZE);
-    for(i = 0; i < BUF_SIZE; i++){
-        buf_[i] = i;
-    }
-
-    // Send Ack to client
-    ret = post_write_signaled (msg_size, lkey, 0, qp, buf_ptr, raddr_base, rkey);
-    if (ret != IBV_WC_SUCCESS){
-        printf("\t Error, post_read_signaled failed\n");
-    }
-
-    // Wait Ack from client
-    usleep(500000);
-    msg_start = buf_ptr + msg_size;
-    msg_end = msg_start + msg_size - 1;
-    while ((*msg_start != 'A') && (*msg_end != 'A')) {
-    }	
+    MPI_Barrier(MPI_COMM_WORLD);
     printf("\t server received ACK from client\n");
 
-    free (wc);
     pthread_exit ((void *)0);
 
  error:
-    if (wc != NULL) {
-    	free (wc);
-    }
     pthread_exit ((void *)-1);
 }
 

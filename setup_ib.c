@@ -75,7 +75,7 @@ int setup_ib ()
     check(ret == 0, "Failed to query IB port information.");
     
     /* register mr */
-    ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs + 2);
+    ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs);
     ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
     check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
 
@@ -97,15 +97,16 @@ int setup_ib ()
     /* initialize buffer */
     /* server:  [A, \0, 0, 1, 2, 3, 4, ...] */
     /* cliennt: [\0, A, \0, \0, \0, \0, \0, ...] */
-    size_t buf_len = config_info.msg_size * (config_info.num_concurr_msgs + 2);
-    memset (ib_res.ib_buf, '\0', buf_len);
+    size_t buf_len = config_info.msg_size * (config_info.num_concurr_msgs);
+    // memset (ib_res.ib_buf, '\0', buf_len);
     if (config_info.is_server) {
-        memset (ib_res.ib_buf, 'A', config_info.msg_size);
+        // memset (ib_res.ib_buf, 'A', config_info.msg_size);
         for(i = 0; i < config_info.num_concurr_msgs; i++){
-            memset (ib_res.ib_buf + config_info.msg_size * (i + 2), (char) i, config_info.msg_size);
+            memset (ib_res.ib_buf + config_info.msg_size * i, (char) i, config_info.msg_size);
         }
     }else{
-        memset (ib_res.ib_buf + config_info.msg_size, 'A', config_info.msg_size);
+        memset (ib_res.ib_buf, (char) i, config_info.msg_size * config_info.num_concurr_msgs);
+        // memset (ib_res.ib_buf + config_info.msg_size, 'A', config_info.msg_size);
     }
 
     /* query IB device attr */
