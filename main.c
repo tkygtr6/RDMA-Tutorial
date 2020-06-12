@@ -15,6 +15,8 @@ void	destroy_env ();
 
 
 #include "unistd.h"
+#include "stdlib.h"
+
 int main (int argc, char *argv[])
 {
     int	ret = 0;
@@ -22,6 +24,7 @@ int main (int argc, char *argv[])
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+    printf("myrank: %d %d\n", myrank, nproc);
 
     if (nproc != 2) {
         printf(" Error: the number of processes should be 2.\n");

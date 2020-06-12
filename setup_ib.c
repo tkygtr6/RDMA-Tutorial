@@ -63,7 +63,7 @@ int setup_ib ()
     check(dev_list != NULL, "Failed to get ib device list.");
 
     /* create IB context */
-    ib_res.ctx = ibv_open_device(dev_list[config_info.is_server ? 0:1]);
+    ib_res.ctx = ibv_open_device(dev_list[config_info.is_server ? 0:0]);
     check(ib_res.ctx != NULL, "Failed to open ib device.");
 
     /* allocate protection domain */
@@ -79,18 +79,22 @@ int setup_ib ()
     ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
     check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
 
-    struct ibv_exp_reg_mr_in in;
-    in.pd = ib_res.pd;
+    /*struct ibv_exp_reg_mr_in in;*/
+    /*in.pd = ib_res.pd;*/
 
-    in.addr = 0;
-    in.length = IBV_EXP_IMPLICIT_MR_SIZE;
-    in.exp_access = IBV_EXP_ACCESS_ON_DEMAND |
-                    IBV_ACCESS_LOCAL_WRITE |
-                    IBV_ACCESS_REMOTE_READ |
-                    IBV_ACCESS_REMOTE_WRITE |
-                    IBV_ACCESS_REMOTE_ATOMIC;
-    in.comp_mask = 0;
-    ib_res.mr = ibv_exp_reg_mr (&in);
+    /*in.addr = 0;*/
+    /*in.length = IBV_IMPLICIT_MR_SIZE;*/
+    /*_access = IBV_ACCESS_ON_DEMAND |*/
+                    /*IBV_ACCESS_LOCAL_WRITE |*/
+                    /*IBV_ACCESS_REMOTE_READ |*/
+                    /*IBV_ACCESS_REMOTE_WRITE |*/
+                    /*IBV_ACCESS_REMOTE_ATOMIC;*/
+    /*in.comp_mask = 0;*/
+    ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size , IBV_ACCESS_ON_DEMAND |
+                                            IBV_ACCESS_LOCAL_WRITE |
+                                            IBV_ACCESS_REMOTE_READ |
+                                            IBV_ACCESS_REMOTE_WRITE |
+                                            IBV_ACCESS_REMOTE_ATOMIC);
 
     check (ib_res.mr != NULL, "Failed to register mr");
     

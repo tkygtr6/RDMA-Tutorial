@@ -6,7 +6,6 @@
 #include <endian.h>
 #include <byteswap.h>
 #include <infiniband/verbs.h>
-#include <infiniband/verbs_exp.h>
 #include <arpa/inet.h>
 
 #define IB_MTU			IBV_MTU_4096
