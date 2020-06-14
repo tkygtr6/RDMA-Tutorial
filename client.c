@@ -46,6 +46,7 @@ void *client_thread_func (void *arg)
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
     MPI_Barrier(MPI_COMM_WORLD);
+    sleep(2);
 
     int sum = 0;
     int num_finished;
@@ -88,6 +89,7 @@ void *client_thread_func (void *arg)
     gettimeofday(&time2, NULL);
     printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
+    sleep(2);
     MPI_Barrier(MPI_COMM_WORLD);
 
     for(i = 0; i < num_concurr_msgs; i++){
@@ -95,8 +97,8 @@ void *client_thread_func (void *arg)
         msg_start  = buf_ptr + buf_offset;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
-        assert(*msg_start == (char) i);
-        assert(*msg_end == (char) i);
+        assert(*msg_start == (char) i + 1);
+        assert(*msg_end == (char) i + 1);
     }
     printf("\t client all finishes\n");
 
