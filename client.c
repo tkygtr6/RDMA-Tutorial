@@ -54,15 +54,10 @@ void *client_thread_func (void *arg)
     struct timeval time1;
     struct timeval time2;
 
-    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + 8192, raddr + 8192, rkey);
-    while(!ibv_poll_cq (cq, num_wc, wc)){
-    }
-    sleep(1);
-
     gettimeofday(&time1, NULL);
+
     ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr, raddr, rkey);
     usleep(config_info.sleep_time);
-    /*ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size, raddr + msg_size, rkey);*/
     ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size, raddr + msg_size, rkey);
 
     printf("Wait phase begin\n");
