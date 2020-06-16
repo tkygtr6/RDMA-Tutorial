@@ -27,6 +27,10 @@ void *server_thread (void *arg)
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    sleep(2);
+    usleep(10000);
+    ret = post_recv (config_info.msg_size, ib_res.mr->lkey, 0, ib_res.qp, ib_res.ib_buf);
+
     MPI_Barrier(MPI_COMM_WORLD);
     printf("\t server received ACK from client\n");
 

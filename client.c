@@ -56,9 +56,11 @@ void *client_thread_func (void *arg)
 
     gettimeofday(&time1, NULL);
 
-    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr, raddr, rkey);
+    //ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr, raddr, rkey);
+    ret = post_send (msg_size, lkey, 0, ib_res.qp, buf_ptr);
     usleep(config_info.sleep_time);
-    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size, raddr + msg_size, rkey);
+    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + 4096, raddr + 4096, rkey);
+    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size + 4096, raddr + msg_size + 4096, rkey);
 
     printf("Wait phase begin\n");
     while(sum < 2){
@@ -84,6 +86,7 @@ void *client_thread_func (void *arg)
     MPI_Barrier(MPI_COMM_WORLD);
 
     /*for(i = 0; i < num_concurr_msgs; i++){*/
+        /*printf("i: %d\n", i);*/
         /*buf_offset = msg_size * i;*/
         /*msg_start  = buf_ptr + buf_offset;*/
         /*msg_end    = msg_start + msg_size - 1;*/
@@ -91,7 +94,7 @@ void *client_thread_func (void *arg)
         /*assert(*msg_start == (char) i + 1);*/
         /*assert(*msg_end == (char) i + 1);*/
     /*}*/
-    printf("\t client all finishes\n");
+    /*printf("\t client all finishes\n");*/
 
     free (wc);
     pthread_exit ((void *)0);

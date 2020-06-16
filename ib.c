@@ -35,7 +35,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
         .rq_psn             = 0,
         .path_mtu           = IBV_MTU_4096,
         .max_dest_rd_atomic = 4,
-        .min_rnr_timer      = 13,
+        .min_rnr_timer      = 0,
         .ah_attr.dlid       = target_lid,
         .ah_attr.sl         = IB_SL,
         .ah_attr.src_path_bits = 0,
@@ -74,7 +74,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
 }
 
 int post_send (uint32_t req_size, uint32_t lkey, uint64_t wr_id,
-	       uint32_t imm_data, struct ibv_qp *qp, char *buf)
+	       struct ibv_qp *qp, char *buf)
 {
     int ret = 0;
     struct ibv_send_wr *bad_send_wr;
@@ -89,9 +89,8 @@ int post_send (uint32_t req_size, uint32_t lkey, uint64_t wr_id,
 	.wr_id      = wr_id,
 	.sg_list    = &list,
 	.num_sge    = 1,
-	.opcode     = IBV_WR_SEND_WITH_IMM,
+	.opcode     = IBV_WR_SEND,
 	.send_flags = IBV_SEND_SIGNALED,
-	.imm_data   = htonl (imm_data)
     };
 
     ret = ibv_post_send (qp, &send_wr, &bad_send_wr);

@@ -98,7 +98,8 @@ int setup_ib ()
                                             IBV_ACCESS_REMOTE_WRITE |
                                             IBV_ACCESS_REMOTE_ATOMIC);
     }else{
-    ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size , IBV_ACCESS_ON_DEMAND |
+    /*ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size , IBV_ACCESS_ON_DEMAND |*/
+    ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size,
                                             IBV_ACCESS_LOCAL_WRITE |
                                             IBV_ACCESS_REMOTE_READ |
                                             IBV_ACCESS_REMOTE_WRITE |
