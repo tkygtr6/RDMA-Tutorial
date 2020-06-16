@@ -90,11 +90,20 @@ int setup_ib ()
                     /*IBV_ACCESS_REMOTE_WRITE |*/
                     /*IBV_ACCESS_REMOTE_ATOMIC;*/
     /*in.comp_mask = 0;*/
+    if (config_info.is_server) {
+    /*ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size , IBV_ACCESS_ON_DEMAND |*/
+    ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size,
+                                            IBV_ACCESS_LOCAL_WRITE |
+                                            IBV_ACCESS_REMOTE_READ |
+                                            IBV_ACCESS_REMOTE_WRITE |
+                                            IBV_ACCESS_REMOTE_ATOMIC);
+    }else{
     ib_res.mr = ibv_reg_mr (ib_res.pd, ib_res.ib_buf, ib_res.ib_buf_size , IBV_ACCESS_ON_DEMAND |
                                             IBV_ACCESS_LOCAL_WRITE |
                                             IBV_ACCESS_REMOTE_READ |
                                             IBV_ACCESS_REMOTE_WRITE |
                                             IBV_ACCESS_REMOTE_ATOMIC);
+    }
 
     check (ib_res.mr != NULL, "Failed to register mr");
     

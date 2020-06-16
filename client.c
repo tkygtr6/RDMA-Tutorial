@@ -54,25 +54,19 @@ void *client_thread_func (void *arg)
     struct timeval time1;
     struct timeval time2;
 
-    gettimeofday(&time1, NULL);
-    for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * i;
-        msg_start  = buf_ptr + buf_offset;
-        msg_end    = msg_start + msg_size - 1;
-        raddr      = raddr_base + buf_offset;
-
-        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, msg_start, raddr, rkey);
-        if (ret != IBV_WC_SUCCESS){
-            printf("Error, post_write_signaled failed, i = %d\n", i);
-        }
-
-        printf("i: %d, remaining: %d\n", i, i - sum + 1);
-
-        usleep(config_info.sleep_time);
+    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + 8192, raddr + 8192, rkey);
+    while(!ibv_poll_cq (cq, num_wc, wc)){
     }
+    sleep(1);
+
+    gettimeofday(&time1, NULL);
+    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr, raddr, rkey);
+    usleep(config_info.sleep_time);
+    /*ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size, raddr + msg_size, rkey);*/
+    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size, raddr + msg_size, rkey);
 
     printf("Wait phase begin\n");
-    while(sum < num_concurr_msgs){
+    while(sum < 2){
         num_finished = ibv_poll_cq (cq, num_wc, wc);
         sum += num_finished;
         for(j = 0; j < num_finished; j++){
@@ -82,9 +76,11 @@ void *client_thread_func (void *arg)
                     printf("RETRANSMISSION ERROR\n");
                     exit(1);
                 }
+            }else{
+                printf("Finish\n");
             }
         }
-        /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
+        // printf("i: %d, remaining: %d\n", i, i - sum + 1);
     }
     gettimeofday(&time2, NULL);
     printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
@@ -92,14 +88,14 @@ void *client_thread_func (void *arg)
     sleep(2);
     MPI_Barrier(MPI_COMM_WORLD);
 
-    for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * i;
-        msg_start  = buf_ptr + buf_offset;
-        msg_end    = msg_start + msg_size - 1;
-        raddr      = raddr_base + buf_offset;
-        assert(*msg_start == (char) i + 1);
-        assert(*msg_end == (char) i + 1);
-    }
+    /*for(i = 0; i < num_concurr_msgs; i++){*/
+        /*buf_offset = msg_size * i;*/
+        /*msg_start  = buf_ptr + buf_offset;*/
+        /*msg_end    = msg_start + msg_size - 1;*/
+        /*raddr      = raddr_base + buf_offset;*/
+        /*assert(*msg_start == (char) i + 1);*/
+        /*assert(*msg_end == (char) i + 1);*/
+    /*}*/
     printf("\t client all finishes\n");
 
     free (wc);

@@ -35,7 +35,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
         .rq_psn             = 0,
         .path_mtu           = IBV_MTU_4096,
         .max_dest_rd_atomic = 4,
-        .min_rnr_timer      = 13,
+        .min_rnr_timer      = 20,
         .ah_attr.dlid       = target_lid,
         .ah_attr.sl         = IB_SL,
         .ah_attr.src_path_bits = 0,
