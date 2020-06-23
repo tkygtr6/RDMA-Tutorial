@@ -56,12 +56,16 @@ void *client_thread_func (void *arg)
 
     gettimeofday(&time1, NULL);
 
-    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr, raddr, rkey);
-    usleep(config_info.sleep_time);
-    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size, raddr + msg_size, rkey);
+    for(i = 0; i < num_concurr_msgs; i++){
+        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size * i, raddr + msg_size * i, rkey);
+        usleep(config_info.sleep_time);
+
+        num_finished = ibv_poll_cq (cq, num_wc, wc);
+        /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
+    }
 
     printf("Wait phase begin\n");
-    while(sum < 2){
+    while(sum < num_concurr_msgs){
         num_finished = ibv_poll_cq (cq, num_wc, wc);
         sum += num_finished;
         for(j = 0; j < num_finished; j++){

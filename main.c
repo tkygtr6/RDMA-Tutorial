@@ -30,9 +30,7 @@ int main (int argc, char *argv[])
         printf(" Error: the number of processes should be 2.\n");
     }
 
-	config_info.is_server	     = myrank ? false : true;
-
-    if (config_info.is_server) {
+    if (!myrank) {
         if (argc == 1) {
             config_info.msg_size = 100;
         } else {
@@ -60,16 +58,34 @@ int main (int argc, char *argv[])
             config_info.retry_cnt = 0;
         }
 
+        char *rnr_timer_str;
+        if (rnr_timer_str = getenv("RNR_TIMER")) {
+            config_info.rnr_timer = atoi(rnr_timer_str);
+        }else{
+            config_info.rnr_timer = 13;
+        }
+
+        char *odp_flag_str;
+        int odp_flag;
+        if (odp_flag_str = getenv("ODP")) {
+            odp_flag = atoi(odp_flag_str);
+        }else{
+            odp_flag = 3;
+        }
+        config_info.odp_in_server = odp_flag & 0x1;
+        config_info.odp_in_receiver = (odp_flag & 0x2) >> 1;
+
         printf("size: %d\n", config_info.msg_size);
         printf("num_message: %d\n", config_info.num_concurr_msgs);
         printf("sleep_time: %d\n", config_info.sleep_time);
         printf("retry_cnt: %d\n", config_info.retry_cnt);
+        printf("rnr_timer: %d\n", config_info.rnr_timer);
+        printf("ODP in server: %d\n", config_info.odp_in_server);
+        printf("ODP in receiver: %d\n", config_info.odp_in_receiver);
     }
 
-    MPI_Bcast(&config_info.msg_size, sizeof(config_info.msg_size), MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&config_info.num_concurr_msgs, sizeof(config_info.msg_size), MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&config_info.sleep_time, sizeof(config_info.sleep_time), MPI_BYTE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&config_info.retry_cnt, sizeof(config_info.retry_cnt), MPI_BYTE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&config_info, sizeof(config_info), MPI_BYTE, 0, MPI_COMM_WORLD);
+	config_info.is_server	     = myrank ? false : true;
 
     ret = init_env ();
     check (ret == 0, "Failed to init env");

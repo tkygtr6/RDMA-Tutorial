@@ -11,6 +11,9 @@ struct ConfigInfo {
     int  num_concurr_msgs;   /* the number of messages can be sent concurrently */
     int  sleep_time;
     int  retry_cnt;
+    int  rnr_timer;
+    int  odp_in_server;
+    int  odp_in_receiver;
 }__attribute__((aligned(64)));
 
 extern struct ConfigInfo config_info;
