@@ -55,7 +55,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
     struct ibv_qp_attr  qp_attr = {
         .qp_state      = IBV_QPS_RTS,
         .sq_psn        = 0,
-        .timeout       = 18,
+        .timeout       = config_info.timeout,
         .rnr_retry     = 7,
         .retry_cnt     = config_info.retry_cnt,
         .max_rd_atomic = 4,

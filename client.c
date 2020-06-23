@@ -46,7 +46,7 @@ void *client_thread_func (void *arg)
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    sleep(2);
+    usleep(500000);
 
     int sum = 0;
     int num_finished;
@@ -59,9 +59,6 @@ void *client_thread_func (void *arg)
     for(i = 0; i < num_concurr_msgs; i++){
         ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + msg_size * i, raddr + msg_size * i, rkey);
         usleep(config_info.sleep_time);
-
-        num_finished = ibv_poll_cq (cq, num_wc, wc);
-        /*printf("i: %d, remaining: %d\n", i, i - sum + 1);*/
     }
 
     printf("Wait phase begin\n");
@@ -79,12 +76,12 @@ void *client_thread_func (void *arg)
                 printf("Finish\n");
             }
         }
-        // printf("i: %d, remaining: %d\n", i, i - sum + 1);
+        //printf("i: %d, remaining: %d\n", i, i - sum + 1);
     }
     gettimeofday(&time2, NULL);
     printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
-    sleep(2);
+    usleep(500000);
     MPI_Barrier(MPI_COMM_WORLD);
 
     /*for(i = 0; i < num_concurr_msgs; i++){*/

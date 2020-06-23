@@ -58,6 +58,13 @@ int main (int argc, char *argv[])
             config_info.retry_cnt = 0;
         }
 
+        char *timeout_str;
+        if (timeout_str = getenv("TIMEOUT")) {
+            config_info.timeout = atoi(timeout_str);
+        }else{
+            config_info.timeout = 18;
+        }
+
         char *rnr_timer_str;
         if (rnr_timer_str = getenv("RNR_TIMER")) {
             config_info.rnr_timer = atoi(rnr_timer_str);
@@ -78,6 +85,7 @@ int main (int argc, char *argv[])
         printf("size: %d\n", config_info.msg_size);
         printf("num_message: %d\n", config_info.num_concurr_msgs);
         printf("sleep_time: %d\n", config_info.sleep_time);
+        printf("timeout: %d\n", config_info.timeout);
         printf("retry_cnt: %d\n", config_info.retry_cnt);
         printf("rnr_timer: %d\n", config_info.rnr_timer);
         printf("ODP in server: %d\n", config_info.odp_in_server);
