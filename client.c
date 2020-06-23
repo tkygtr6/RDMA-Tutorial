@@ -57,28 +57,27 @@ void *client_thread_func (void *arg)
     gettimeofday(&time1, NULL);
 
     ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr, raddr, rkey);
-    usleep(config_info.sleep_time);
-    ret = post_read_signaled (msg_size, lkey, 0, ib_res.qp, buf_ptr + 4096, raddr + 4096, rkey);
-
     printf("Wait phase begin\n");
-    while(sum < num_concurr_msgs){
+
+    while(1){
         num_finished = ibv_poll_cq (cq, num_wc, wc);
-        sum += num_finished;
         for(j = 0; j < num_finished; j++){
             if (wc[j].status != IBV_WC_SUCCESS){
                 printf("Error: ib_poll_cq failed. status: %d i = %d, sum = %d\n", wc->status, i, sum);
                 if (wc[j].status == IBV_WC_RETRY_EXC_ERR){
                     printf("RETRANSMISSION ERROR\n");
-                    exit(1);
+                    goto end;
                 }
             }else{
                 printf("Finish\n");
             }
         }
-        //printf("i: %d, remaining: %d\n", i, i - sum + 1);
     }
+
+end:
+
     gettimeofday(&time2, NULL);
-    printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
+    printf("Time: %f [s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
     usleep(500000);
     MPI_Barrier(MPI_COMM_WORLD);
