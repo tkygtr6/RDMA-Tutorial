@@ -13,6 +13,7 @@ struct ConfigInfo {
     int  timeout;
     int  retry_cnt;
     int  rnr_timer;
+    int  qp_num;
     int  odp_in_server;
     int  odp_in_receiver;
 }__attribute__((aligned(64)));

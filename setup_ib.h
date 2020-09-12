@@ -11,7 +11,7 @@ struct IBRes {
     struct ibv_mr		*mr;
     struct ibv_cq		*cq;
     struct ibv_srq		*srq;
-    struct ibv_qp		*qp;
+    struct ibv_qp		**qps;
     struct ibv_port_attr	 port_attr;
     struct ibv_device_attr	 dev_attr;
 
@@ -20,6 +20,7 @@ struct IBRes {
 
     uint32_t rkey;
     uint64_t raddr;
+    int qp_num;
 };
 
 extern struct IBRes ib_res;

@@ -38,8 +38,8 @@ int connect_qp (struct ibv_qp *qp)
     check (ret == 0, "Failed to modify qp to rts");
 
     log (LOG_SUB_HEADER, "IB Config");
-    log ("\tqp[%"PRIu32"] <-> qp[%"PRIu32"]", 
-	 ib_res.qp->qp_num, remote_qp_info.qp_num);
+    /*log ("\tqp[%"PRIu32"] <-> qp[%"PRIu32"]", 
+	 ib_res.qp->qp_num, remote_qp_info.qp_num); */
     log ("\traddr[%"PRIu64"] <-> raddr[%"PRIu64"]", 
 	 local_qp_info.raddr, ib_res.raddr);
     log (LOG_SUB_HEADER, "End of IB Config");
@@ -56,6 +56,9 @@ int setup_ib ()
     int i;
     struct ibv_device **dev_list = NULL;    
     memset (&ib_res, 0, sizeof(struct IBRes));
+
+    ib_res.qp_num = config_info.qp_num;
+    ib_res.qps = (struct ibv_qp **) malloc(sizeof(struct ibv_qp*) * ib_res.qp_num);
 
     /* get IB device list */
     int num_devices;
@@ -136,20 +139,22 @@ int setup_ib ()
         .send_cq = ib_res.cq,
         .recv_cq = ib_res.cq,
         .cap = {
-            .max_send_wr = 256,
-            .max_recv_wr = 256,
+            .max_send_wr = 4096,
+            .max_recv_wr = 4096,
             .max_send_sge = 3,
             .max_recv_sge = 3,
         },
         .qp_type = IBV_QPT_RC,
     };
 
-    ib_res.qp = ibv_create_qp (ib_res.pd, &qp_init_attr);
-    check (ib_res.qp != NULL, "Failed to create qp");
+    for (int i = 0; i < ib_res.qp_num; i++) {
+        ib_res.qps[i] = ibv_create_qp (ib_res.pd, &qp_init_attr);
+        check (ib_res.qps[i] != NULL, "Failed to create qp");
 
-    /* connect QP */
-	ret = connect_qp (ib_res.qp);
-    check (ret == 0, "Failed to connect qp");
+        /* connect QP */
+        ret = connect_qp (ib_res.qps[i]);
+        check (ret == 0, "Failed to connect qp");
+    }
 
     ibv_free_device_list (dev_list);
     return 0;
@@ -163,9 +168,9 @@ int setup_ib ()
 
 void close_ib_connection ()
 {
-    if (ib_res.qp != NULL) {
+/*     if (ib_res.qp != NULL) {
 	ibv_destroy_qp (ib_res.qp);
-    }
+    } */
 
     if (ib_res.cq != NULL) {
 	ibv_destroy_cq (ib_res.cq);

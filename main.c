@@ -72,6 +72,13 @@ int main (int argc, char *argv[])
             config_info.rnr_timer = 13;
         }
 
+        char *qp_num_str;
+        if (qp_num_str = getenv("QP_NUM")) {
+            config_info.qp_num = atoi(qp_num_str);
+        }else{
+            config_info.qp_num = 1;
+        }
+
         char *odp_flag_str;
         int odp_flag;
         if (odp_flag_str = getenv("ODP")) {
@@ -88,6 +95,7 @@ int main (int argc, char *argv[])
         printf("timeout: %d\n", config_info.timeout);
         printf("retry_cnt: %d\n", config_info.retry_cnt);
         printf("rnr_timer: %d\n", config_info.rnr_timer);
+        printf("qp_num: %d\n", config_info.qp_num);
         printf("ODP in server: %d\n", config_info.odp_in_server);
         printf("ODP in receiver: %d\n", config_info.odp_in_receiver);
     }
