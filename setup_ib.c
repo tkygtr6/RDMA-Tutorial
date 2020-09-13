@@ -147,7 +147,7 @@ int setup_ib ()
         .qp_type = IBV_QPT_RC,
     };
 
-    for (int i = 0; i < ib_res.qp_num; i++) {
+    for (i = 0; i < ib_res.qp_num; i++) {
         ib_res.qps[i] = ibv_create_qp (ib_res.pd, &qp_init_attr);
         check (ib_res.qps[i] != NULL, "Failed to create qp");
 

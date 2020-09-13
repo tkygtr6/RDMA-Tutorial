@@ -56,7 +56,7 @@ void *client_thread_func (void *arg)
 
     gettimeofday(&time1, NULL);
 
-    for(int i = 0; i < num_concurr_msgs; i++){
+    for(i = 0; i < num_concurr_msgs; i++){
         ret = post_read_signaled (msg_size, lkey, 0, ib_res.qps[i % ib_res.qp_num], buf_ptr + msg_size * i, raddr + msg_size * i, rkey);
     }
 
