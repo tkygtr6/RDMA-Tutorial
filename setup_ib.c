@@ -118,12 +118,12 @@ int setup_ib ()
     // memset (ib_res.ib_buf, '\0', buf_len);
     if (config_info.is_server) {
         // memset (ib_res.ib_buf, 'A', config_info.msg_size);
+        memset (ib_res.ib_buf, 0, config_info.msg_size * config_info.num_concurr_msgs);
+    }else{
+        // memset (ib_res.ib_buf + config_info.msg_size, 'A', config_info.msg_size);
         for(i = 0; i < config_info.num_concurr_msgs; i++){
             memset (ib_res.ib_buf + config_info.msg_size * i, (char) i + 1, config_info.msg_size);
         }
-    }else{
-        memset (ib_res.ib_buf, 0, config_info.msg_size * config_info.num_concurr_msgs);
-        // memset (ib_res.ib_buf + config_info.msg_size, 'A', config_info.msg_size);
     }
 
     /* query IB device attr */

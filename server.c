@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <sys/time.h>
 #include <mpi.h>
+#include <assert.h>
 
 #include "debug.h"
 #include "ib.h"
@@ -14,9 +15,19 @@ void *server_thread (void *arg)
 {
     int ret = 0;
     long        thread_id       = (long) arg;
+    int         num_concurr_msgs= config_info.num_concurr_msgs;
+    int         msg_size	 = config_info.msg_size;
 
     pthread_t   self;
     cpu_set_t   cpuset;
+
+    int			 buf_offset   = 0;
+    char		*buf_ptr      = ib_res.ib_buf;
+    uint64_t             raddr_base   = ib_res.raddr;
+    uint64_t             raddr        = raddr_base;
+    volatile char       *msg_start    = buf_ptr;
+    volatile char       *msg_end      = msg_start + msg_size - 1;
+    int i;
 
     /* set thread affinity */
     CPU_ZERO (&cpuset);
@@ -29,6 +40,16 @@ void *server_thread (void *arg)
 
     MPI_Barrier(MPI_COMM_WORLD);
     printf("\t server received ACK from client\n");
+
+    for(i = 0; i < num_concurr_msgs; i++){
+        buf_offset = msg_size * i;
+        msg_start  = buf_ptr + buf_offset;
+        msg_end    = msg_start + msg_size - 1;
+        raddr      = raddr_base + buf_offset;
+        // printf("%d %d\n", *msg_start, (char) (i + 1));
+        assert(*msg_start == (char) (i + 1));
+        assert(*msg_end == (char) (i + 1));
+    }
 
     pthread_exit ((void *)0);
 
