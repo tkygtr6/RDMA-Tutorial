@@ -12,6 +12,12 @@ struct IBRes ib_res;
 
 int connect_qp (struct ibv_qp *qp)
 {
+    static int count = 0;
+    if (count == 0){
+        printf("%p\n", qp);
+        printf("num: %x\n", qp->qp_num);
+    }
+    count++;
     int ret	      = 0, n = 0;
     struct QPInfo local_qp_info, remote_qp_info;
 
@@ -131,7 +137,7 @@ int setup_ib ()
     check(ret==0, "Failed to query device");
     
     /* create cq */
-    ib_res.cq = ibv_create_cq (ib_res.ctx, 4096, NULL, NULL, 0);
+    ib_res.cq = ibv_create_cq (ib_res.ctx, 131072, NULL, NULL, 0);
     check (ib_res.cq != NULL, "Failed to create cq");
     
     /* create qp */
@@ -139,8 +145,8 @@ int setup_ib ()
         .send_cq = ib_res.cq,
         .recv_cq = ib_res.cq,
         .cap = {
-            .max_send_wr = 4096,
-            .max_recv_wr = 4096,
+            .max_send_wr = 8192,
+            .max_recv_wr = 8192,
             .max_send_sge = 3,
             .max_recv_sge = 3,
         },

@@ -89,6 +89,13 @@ int main (int argc, char *argv[])
         config_info.odp_in_server = odp_flag & 0x1;
         config_info.odp_in_receiver = (odp_flag & 0x2) >> 1;
 
+        char *conc_ops_str;
+        if (conc_ops_str = getenv("CONC_OPS")) {
+            config_info.conc_ops = atoi(conc_ops_str);
+        }else{
+            config_info.conc_ops = 4;
+        }
+
         printf("size: %d\n", config_info.msg_size);
         printf("num_message: %d\n", config_info.num_concurr_msgs);
         printf("sleep_time: %d\n", config_info.sleep_time);
@@ -96,6 +103,7 @@ int main (int argc, char *argv[])
         printf("retry_cnt: %d\n", config_info.retry_cnt);
         printf("rnr_timer: %d\n", config_info.rnr_timer);
         printf("qp_num: %d\n", config_info.qp_num);
+        printf("conc_ops: %d\n", config_info.conc_ops);
         printf("ODP in server: %d\n", config_info.odp_in_server);
         printf("ODP in receiver: %d\n", config_info.odp_in_receiver);
     }

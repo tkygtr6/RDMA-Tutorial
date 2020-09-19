@@ -34,7 +34,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
         .dest_qp_num        = target_qp_num,
         .rq_psn             = 0,
         .path_mtu           = IBV_MTU_4096,
-        .max_dest_rd_atomic = 4,
+        .max_dest_rd_atomic = config_info.conc_ops,
         .min_rnr_timer      = config_info.rnr_timer,
         .ah_attr.dlid       = target_lid,
         .ah_attr.sl         = IB_SL,
@@ -58,7 +58,7 @@ int modify_qp_to_rts (struct ibv_qp *qp, uint32_t target_qp_num, uint16_t target
         .timeout       = config_info.timeout,
         .rnr_retry     = 7,
         .retry_cnt     = config_info.retry_cnt,
-        .max_rd_atomic = 4,
+        .max_rd_atomic = config_info.conc_ops,
     };
 
     ret = ibv_modify_qp (qp, &qp_attr,
