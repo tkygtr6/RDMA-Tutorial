@@ -12,12 +12,6 @@ struct IBRes ib_res;
 
 int connect_qp (struct ibv_qp *qp)
 {
-    static int count = 0;
-    if (count == 0){
-        printf("%p\n", qp);
-        printf("num: %x\n", qp->qp_num);
-    }
-    count++;
     int ret	      = 0, n = 0;
     struct QPInfo local_qp_info, remote_qp_info;
 
@@ -33,7 +27,20 @@ int connect_qp (struct ibv_qp *qp)
         MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
     }
-    
+
+    static int count = 0;
+    FILE *fp;
+    if (!count) {
+        fp = fopen("QPs.txt", "w");
+    } else{
+        fp = fopen("QPs.txt", "a");
+    }
+    if (config_info.is_server) {
+        fprintf(fp, "%d %d\n", local_qp_info.qp_num, remote_qp_info.qp_num);
+    }
+    fclose(fp);
+    count++;
+
     /* store rkey and raddr info */
     ib_res.rkey  = remote_qp_info.rkey;
     ib_res.raddr = remote_qp_info.raddr;
