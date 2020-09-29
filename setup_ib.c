@@ -10,7 +10,7 @@
 
 struct IBRes ib_res;
 
-int connect_qp (struct ibv_qp *qp)
+int connect_qp (struct ibv_qp *qp, int dest)
 {
     int ret	      = 0, n = 0;
     struct QPInfo local_qp_info, remote_qp_info;
@@ -21,11 +21,11 @@ int connect_qp (struct ibv_qp *qp)
     local_qp_info.raddr   = (uintptr_t) ib_res.ib_buf;
    
     if (config_info.is_server) {
-        MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, 1, 0, MPI_COMM_WORLD);
-        MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, dest, 0, MPI_COMM_WORLD);
+        MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, dest, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     } else{
-        MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+        MPI_Recv(&remote_qp_info, sizeof(struct QPInfo), MPI_BYTE, dest, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Send(&local_qp_info, sizeof(struct QPInfo), MPI_BYTE, dest, 0, MPI_COMM_WORLD);
     }
 
     static int count = 0;
@@ -160,12 +160,21 @@ int setup_ib ()
         .qp_type = IBV_QPT_RC,
     };
 
-    for (i = 0; i < ib_res.qp_num; i++) {
-        ib_res.qps[i] = ibv_create_qp (ib_res.pd, &qp_init_attr);
-        check (ib_res.qps[i] != NULL, "Failed to create qp");
+    if (config_info.is_server){
+        for (i = 0; i < config_info.nproc / 2; i++) {
+            ib_res.qps[i] = ibv_create_qp (ib_res.pd, &qp_init_attr);
+            check (ib_res.qps[i] != NULL, "Failed to create qp");
+
+            /* connect QP */
+            ret = connect_qp (ib_res.qps[i], config_info.nproc / 2 + i);
+            check (ret == 0, "Failed to connect qp");
+        }
+    } else if ( config_info.nproc / 2 <= config_info.myrank ) {
+        ib_res.qps[0] = ibv_create_qp (ib_res.pd, &qp_init_attr);
+        check (ib_res.qps[0] != NULL, "Failed to create qp");
 
         /* connect QP */
-        ret = connect_qp (ib_res.qps[i]);
+        ret = connect_qp (ib_res.qps[0], 0);
         check (ret == 0, "Failed to connect qp");
     }
 

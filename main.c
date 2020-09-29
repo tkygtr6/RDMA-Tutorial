@@ -24,11 +24,10 @@ int main (int argc, char *argv[])
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-    printf("myrank: %d %d\n", myrank, nproc);
 
-    if (nproc != 2) {
-        printf(" Error: the number of processes should be 2.\n");
-    }
+    char hname[BUFSIZ];
+    gethostname(hname, sizeof(hname));
+    printf("rank: %d %s %d\n", myrank, hname, sched_getcpu() );
 
     if (!myrank) {
         if (argc == 1) {
@@ -76,7 +75,7 @@ int main (int argc, char *argv[])
         if (qp_num_str = getenv("QP_NUM")) {
             config_info.qp_num = atoi(qp_num_str);
         }else{
-            config_info.qp_num = 1;
+            config_info.qp_num = nproc - 1;
         }
 
         char *odp_flag_str;
@@ -109,7 +108,14 @@ int main (int argc, char *argv[])
     }
 
     MPI_Bcast(&config_info, sizeof(config_info), MPI_BYTE, 0, MPI_COMM_WORLD);
-	config_info.is_server	     = myrank ? false : true;
+
+    config_info.myrank = myrank;
+    config_info.nproc = nproc;
+    if (myrank == 0) {
+        config_info.is_server	     = true;
+    } else{
+        config_info.is_server	     = false;
+    }
 
     ret = init_env ();
     check (ret == 0, "Failed to init env");

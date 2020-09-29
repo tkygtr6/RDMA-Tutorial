@@ -46,7 +46,6 @@ void *client_thread_func (void *arg)
     check (ret == 0, "thread[%ld]: failed to set thread affinity", thread_id);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    usleep(500000);
 
     int sum = 0;
     int num_finished;
@@ -56,8 +55,10 @@ void *client_thread_func (void *arg)
 
     gettimeofday(&time1, NULL);
 
+    if ( config_info.nproc / 2 <= config_info.myrank ) {
+
     for(i = 0; i < num_concurr_msgs; i++){
-        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qps[i % ib_res.qp_num], buf_ptr + msg_size * i, raddr + msg_size * i, rkey);
+        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qps[0], buf_ptr + msg_size * i, raddr + msg_size * i, rkey);
     }
 
     printf("Wait phase begin\n");
@@ -72,6 +73,7 @@ void *client_thread_func (void *arg)
                     exit(1);
                 }
             }
+            // printf("%d ", wc[j].qp_num - ib_res.qps[0]->qp_num);
         }
         /*printf("remaining: %d\n", num_concurr_msgs - sum);*/
     }
@@ -79,7 +81,6 @@ void *client_thread_func (void *arg)
     printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
     usleep(500000);
-    MPI_Barrier(MPI_COMM_WORLD);
 
     for(i = 0; i < num_concurr_msgs; i++){
         buf_offset = msg_size * i;
@@ -91,6 +92,10 @@ void *client_thread_func (void *arg)
         assert(*msg_end == (char) (i + 1));
     }
     printf("\t client all finishes\n");
+
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
 
     free (wc);
     pthread_exit ((void *)0);
