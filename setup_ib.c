@@ -91,9 +91,16 @@ int setup_ib ()
     check(ret == 0, "Failed to query IB port information.");
     
     /* register mr */
-    ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs) + 16384;
-    ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
-    check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
+
+    if (config_info.is_server) {
+        ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs) * (config_info.nproc / 2) + 16384;
+        ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
+        check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
+    } else{
+        ib_res.ib_buf_size = config_info.msg_size * (config_info.num_concurr_msgs) + 16384;
+        ib_res.ib_buf      = (char *) memalign (4096, ib_res.ib_buf_size);
+        check (ib_res.ib_buf != NULL, "Failed to allocate ib_buf");
+    }
 
     /*struct ibv_exp_reg_mr_in in;*/
     /*in.pd = ib_res.pd;*/
@@ -131,7 +138,7 @@ int setup_ib ()
     // memset (ib_res.ib_buf, '\0', buf_len);
     if (config_info.is_server) {
         // memset (ib_res.ib_buf, 'A', config_info.msg_size);
-        for(i = 0; i < config_info.num_concurr_msgs; i++){
+        for(i = 0; i < config_info.num_concurr_msgs * (config_info.nproc / 2); i++){
             memset (ib_res.ib_buf + config_info.msg_size * i, (char) i + 1, config_info.msg_size);
         }
     }else{

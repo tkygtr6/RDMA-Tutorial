@@ -56,9 +56,11 @@ void *client_thread_func (void *arg)
     gettimeofday(&time1, NULL);
 
     if ( config_info.nproc / 2 <= config_info.myrank ) {
+    int client_rank = config_info.myrank - config_info.nproc / 2;
 
     for(i = 0; i < num_concurr_msgs; i++){
-        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qps[0], buf_ptr + msg_size * i, raddr + msg_size * i, rkey);
+        int msg_idx = (config_info.nproc / 2) * i + client_rank;
+        ret = post_read_signaled (msg_size, lkey, 0, ib_res.qps[0], buf_ptr + msg_size * i, raddr + msg_size * msg_idx, rkey);
     }
 
     printf("Wait phase begin\n");
@@ -83,13 +85,13 @@ void *client_thread_func (void *arg)
     usleep(500000);
 
     for(i = 0; i < num_concurr_msgs; i++){
-        buf_offset = msg_size * i;
-        msg_start  = buf_ptr + buf_offset;
+        int msg_idx = (config_info.nproc / 2) * i + client_rank;
+        msg_start  = buf_ptr + msg_size * msg_idx;
         msg_end    = msg_start + msg_size - 1;
         raddr      = raddr_base + buf_offset;
-        // printf("%d %d\n", *msg_start, (char) (i + 1));
-        assert(*msg_start == (char) (i + 1));
-        assert(*msg_end == (char) (i + 1));
+        printf("%d %d\n", *msg_start, (char) (msg_idx + 1));
+        // assert((char) *msg_start == (char) (msg_idx + 1));
+        // assert((char) *msg_end == (char) (msg_idx + 1));
     }
     printf("\t client all finishes\n");
 

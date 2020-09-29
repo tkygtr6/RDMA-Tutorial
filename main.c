@@ -40,7 +40,7 @@ int main (int argc, char *argv[])
         if (num_message_str = getenv("NUM_MESSAGE")) {
             config_info.num_concurr_msgs = atoi(num_message_str);
         } else {
-            config_info.num_concurr_msgs = 100;
+            config_info.num_concurr_msgs = 1;
         }
 
         char *sleep_time_str;
