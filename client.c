@@ -76,7 +76,7 @@ void *client_thread_func (void *arg)
         /*printf("remaining: %d\n", num_concurr_msgs - sum);*/
     }
     gettimeofday(&time2, NULL);
-    printf("Time: %f[s]\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
+    printf("Time: %f\n", time2.tv_sec - time1.tv_sec +  (float)(time2.tv_usec - time1.tv_usec) / 1000000);
 
     usleep(500000);
     MPI_Barrier(MPI_COMM_WORLD);
